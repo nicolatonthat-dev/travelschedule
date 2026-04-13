@@ -1,8 +1,50 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import MonthCalendar from "./components/MonthCalendar";
 import FlightCard from "./components/FlightCard";
-import { travelPeriods, taylorPeriods, flights } from "./data/travel";
+import AddModal from "./components/AddModal";
+import { travelPeriods as staticTravelPeriods, taylorPeriods as staticTaylorPeriods, flights as staticFlights } from "./data/travel";
+import { Flight, TravelPeriod } from "./data/travel";
 
 export default function Home() {
+  const [extraFlights, setExtraFlights] = useState<Flight[]>([]);
+  const [extraTravelPeriods, setExtraTravelPeriods] = useState<TravelPeriod[]>([]);
+  const [extraTaylorPeriods, setExtraTaylorPeriods] = useState<TravelPeriod[]>([]);
+
+  useEffect(() => {
+    try {
+      const ef = localStorage.getItem("extra_flights");
+      const ep = localStorage.getItem("extra_travel_periods");
+      const et = localStorage.getItem("extra_taylor_periods");
+      if (ef) setExtraFlights(JSON.parse(ef));
+      if (ep) setExtraTravelPeriods(JSON.parse(ep));
+      if (et) setExtraTaylorPeriods(JSON.parse(et));
+    } catch {}
+  }, []);
+
+  const flights = [...staticFlights, ...extraFlights];
+  const travelPeriods = [...staticTravelPeriods, ...extraTravelPeriods];
+  const taylorPeriods = [...staticTaylorPeriods, ...extraTaylorPeriods];
+
+  function handleAddFlight(flight: Flight) {
+    const updated = [...extraFlights, flight];
+    setExtraFlights(updated);
+    localStorage.setItem("extra_flights", JSON.stringify(updated));
+  }
+
+  function handleAddPeriod(period: TravelPeriod, who: "nicolas" | "taylor") {
+    if (who === "taylor") {
+      const updated = [...extraTaylorPeriods, period];
+      setExtraTaylorPeriods(updated);
+      localStorage.setItem("extra_taylor_periods", JSON.stringify(updated));
+    } else {
+      const updated = [...extraTravelPeriods, period];
+      setExtraTravelPeriods(updated);
+      localStorage.setItem("extra_travel_periods", JSON.stringify(updated));
+    }
+  }
+
   const today = new Date().toISOString().split("T")[0];
 
   const upcomingFlights = flights
@@ -82,6 +124,9 @@ export default function Home() {
             </span>
           </div>
 
+          {/* Right side: add button + status pill */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <AddModal onAddFlight={handleAddFlight} onAddPeriod={handleAddPeriod} />
           {/* Status pill */}
           <div
             style={{
@@ -110,6 +155,7 @@ export default function Home() {
               }}
             />
             {inSF ? "SF" : "LA"}
+          </div>
           </div>
         </div>
       </nav>
@@ -342,8 +388,6 @@ function formatTime12(time: string) {
   const hour = h % 12 || 12;
   return `${hour}:${String(m).padStart(2, "0")} ${period}`;
 }
-
-import { Flight, TravelPeriod } from "./data/travel";
 
 function buildGCalUrl(trip: TravelPeriod, outbound: Flight, returnFlight?: Flight) {
   // Google Calendar needs YYYYMMDD; end date is exclusive so add 1 day
