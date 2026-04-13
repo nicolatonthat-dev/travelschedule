@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nicolas's Travel Schedule",
+  title: "Nic's Travel Schedule",
   description: "Keeping you updated on my LA ↔ SF travel schedule",
 };
 

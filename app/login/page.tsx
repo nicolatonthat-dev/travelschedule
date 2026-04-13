@@ -64,7 +64,7 @@ export default async function LoginPage({
             N
           </div>
           <span style={{ fontWeight: 600, fontSize: 15, color: "var(--text-primary)" }}>
-            Nicolas&apos;s Travel
+            Nic&apos;s Travel
           </span>
         </div>
 

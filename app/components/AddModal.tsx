@@ -132,7 +132,7 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <FormRow label="Who">
                   <select value={who} onChange={(e) => setWho(e.target.value as "nicolas" | "taylor")} style={selectStyle}>
-                    <option value="nicolas">Nicolas</option>
+                    <option value="nicolas">Nic</option>
                     <option value="taylor">Taylor</option>
                   </select>
                 </FormRow>

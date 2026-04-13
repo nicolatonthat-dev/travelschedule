@@ -158,10 +158,10 @@ export default function MonthCalendar({ year, month, travelPeriods, taylorPeriod
                 }}
                 title={
                   together
-                    ? "Nicolas & Taylor in SF ♡"
+                    ? "Nic & Taylor in SF ♡"
                     : nicolasInSF
-                    ? "Nicolas in SF"
-                    : "Nicolas in LA"
+                    ? "Nic in SF"
+                    : "Nic in LA"
                 }
               >
                 {day}

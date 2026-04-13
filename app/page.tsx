@@ -173,7 +173,7 @@ export default function Home() {
               N
             </div>
             <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-primary)", whiteSpace: "nowrap" }}>
-              Nicolas&apos;s Travel
+              Nic&apos;s Travel
             </span>
             <span style={{ color: "var(--text-tertiary)", fontSize: 14, flexShrink: 0 }}>/</span>
             <span style={{ fontSize: 14, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
@@ -471,7 +471,7 @@ function buildGCalUrl(trip: TravelPeriod, outbound: Flight, returnFlight?: Fligh
 
   const params = new URLSearchParams({
     action: "TEMPLATE",
-    text: "Nicolas in San Francisco",
+    text: "Nic in San Francisco",
     dates: `${startDate}/${endDate}`,
     details,
     location: "San Francisco, CA",
