@@ -15,11 +15,12 @@ export async function GET(request: Request) {
   const url = `http://api.aviationstack.com/v1/flights?access_key=${apiKey}&flight_iata=${encodeURIComponent(flight.toUpperCase())}&flight_date=${encodeURIComponent(date)}`;
 
   const res = await fetch(url);
-  if (!res.ok) {
-    return Response.json({ error: "AviationStack request failed" }, { status: 502 });
-  }
-
   const json = await res.json();
+
+  if (!res.ok || json?.error) {
+    const msg = json?.error?.info ?? json?.error?.message ?? `HTTP ${res.status}`;
+    return Response.json({ error: msg }, { status: 502 });
+  }
   const results = json?.data;
 
   if (!results || results.length === 0) {
