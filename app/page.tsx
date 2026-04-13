@@ -5,74 +5,95 @@ import MonthCalendar from "./components/MonthCalendar";
 import FlightCard from "./components/FlightCard";
 import AddModal from "./components/AddModal";
 import FlightDetailModal from "./components/FlightDetailModal";
-import { travelPeriods as staticTravelPeriods, taylorPeriods as staticTaylorPeriods, flights as staticFlights } from "./data/travel";
 import { Flight, TravelPeriod } from "./data/travel";
+import { supabase } from "../lib/supabase";
+
+function mapFlight(row: Record<string, string>): Flight {
+  return {
+    id: row.id,
+    date: row.date,
+    direction: row.direction as "LA → SF" | "SF → LA",
+    flightNumber: row.flight_number,
+    airline: row.airline,
+    departure: row.departure,
+    arrival: row.arrival,
+    departureAirport: row.departure_airport,
+    arrivalAirport: row.arrival_airport,
+  };
+}
+
+function mapPeriod(row: Record<string, string>): TravelPeriod {
+  return {
+    start: row.start,
+    end: row.end,
+    city: row.city as "SF" | "LA",
+    label: row.label,
+  };
+}
 
 export default function Home() {
-  const [extraFlights, setExtraFlights] = useState<Flight[]>([]);
-  const [extraTravelPeriods, setExtraTravelPeriods] = useState<TravelPeriod[]>([]);
-  const [extraTaylorPeriods, setExtraTaylorPeriods] = useState<TravelPeriod[]>([]);
-  const [deletedIds, setDeletedIds] = useState<string[]>([]);
-  const [editedFlights, setEditedFlights] = useState<Flight[]>([]);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [travelPeriods, setTravelPeriods] = useState<TravelPeriod[]>([]);
+  const [taylorPeriods, setTaylorPeriods] = useState<TravelPeriod[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const ef = localStorage.getItem("extra_flights");
-      const ep = localStorage.getItem("extra_travel_periods");
-      const et = localStorage.getItem("extra_taylor_periods");
-      const di = localStorage.getItem("deleted_flight_ids");
-      const ed = localStorage.getItem("edited_flights");
-      if (ef) setExtraFlights(JSON.parse(ef));
-      if (ep) setExtraTravelPeriods(JSON.parse(ep));
-      if (et) setExtraTaylorPeriods(JSON.parse(et));
-      if (di) setDeletedIds(JSON.parse(di));
-      if (ed) setEditedFlights(JSON.parse(ed));
-    } catch {}
-  }, []);
-
-  const flights = [
-    ...staticFlights.map((f) => editedFlights.find((e) => e.id === f.id) ?? f),
-    ...extraFlights.map((f) => editedFlights.find((e) => e.id === f.id) ?? f),
-  ].filter((f) => !deletedIds.includes(f.id));
-
-  const travelPeriods = [...staticTravelPeriods, ...extraTravelPeriods];
-  const taylorPeriods = [...staticTaylorPeriods, ...extraTaylorPeriods];
-
-  function handleAddFlight(flight: Flight) {
-    const updated = [...extraFlights, flight];
-    setExtraFlights(updated);
-    localStorage.setItem("extra_flights", JSON.stringify(updated));
+  async function loadData() {
+    const [{ data: flightRows }, { data: periodRows }] = await Promise.all([
+      supabase.from("flights").select("*").order("date"),
+      supabase.from("travel_periods").select("*").order("start"),
+    ]);
+    setFlights((flightRows ?? []).map(mapFlight));
+    setTravelPeriods((periodRows ?? []).filter((r: Record<string, string>) => r.who === "nicolas").map(mapPeriod));
+    setTaylorPeriods((periodRows ?? []).filter((r: Record<string, string>) => r.who === "taylor").map(mapPeriod));
+    setLoading(false);
   }
 
-  function handleAddPeriod(period: TravelPeriod, who: "nicolas" | "taylor") {
-    if (who === "taylor") {
-      const updated = [...extraTaylorPeriods, period];
-      setExtraTaylorPeriods(updated);
-      localStorage.setItem("extra_taylor_periods", JSON.stringify(updated));
-    } else {
-      const updated = [...extraTravelPeriods, period];
-      setExtraTravelPeriods(updated);
-      localStorage.setItem("extra_travel_periods", JSON.stringify(updated));
-    }
+  useEffect(() => { loadData(); }, []);
+
+  async function handleAddFlight(flight: Flight) {
+    await supabase.from("flights").insert({
+      id: flight.id,
+      date: flight.date,
+      direction: flight.direction,
+      flight_number: flight.flightNumber,
+      airline: flight.airline,
+      departure: flight.departure,
+      arrival: flight.arrival,
+      departure_airport: flight.departureAirport,
+      arrival_airport: flight.arrivalAirport,
+    });
+    await loadData();
   }
 
-  function handleSaveFlight(updated: Flight) {
-    const next = [...editedFlights.filter((e) => e.id !== updated.id), updated];
-    setEditedFlights(next);
-    localStorage.setItem("edited_flights", JSON.stringify(next));
-    // Also update extraFlights if it's a custom flight
-    if (updated.id.startsWith("custom-")) {
-      const next2 = extraFlights.map((f) => f.id === updated.id ? updated : f);
-      setExtraFlights(next2);
-      localStorage.setItem("extra_flights", JSON.stringify(next2));
-    }
+  async function handleAddPeriod(period: TravelPeriod, who: "nicolas" | "taylor") {
+    await supabase.from("travel_periods").insert({
+      start: period.start,
+      end: period.end,
+      city: period.city,
+      label: period.label,
+      who,
+    });
+    await loadData();
   }
 
-  function handleDeleteFlight(id: string) {
-    const next = [...deletedIds, id];
-    setDeletedIds(next);
-    localStorage.setItem("deleted_flight_ids", JSON.stringify(next));
+  async function handleSaveFlight(updated: Flight) {
+    await supabase.from("flights").update({
+      date: updated.date,
+      direction: updated.direction,
+      flight_number: updated.flightNumber,
+      airline: updated.airline,
+      departure: updated.departure,
+      arrival: updated.arrival,
+      departure_airport: updated.departureAirport,
+      arrival_airport: updated.arrivalAirport,
+    }).eq("id", updated.id);
+    await loadData();
+  }
+
+  async function handleDeleteFlight(id: string) {
+    await supabase.from("flights").delete().eq("id", id);
+    await loadData();
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -101,6 +122,12 @@ export default function Home() {
   const nextTrip = travelPeriods
     .filter((p) => p.city === "SF" && p.end >= today)
     .sort((a, b) => a.start.localeCompare(b.start))[0];
+
+  if (loading) return (
+    <main style={{ background: "var(--bg-primary)", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Loading...</div>
+    </main>
+  );
 
   return (
     <main style={{ background: "var(--bg-primary)", minHeight: "100vh" }}>
