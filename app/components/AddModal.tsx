@@ -10,15 +10,6 @@ interface AddModalProps {
 
 type Tab = "flight" | "period";
 
-interface FlightResult {
-  airline: string;
-  flightNumber: string;
-  departure: string;
-  arrival: string;
-  departureAirport: string;
-  arrivalAirport: string;
-}
-
 export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("flight");
@@ -32,43 +23,11 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
   const [arrival, setArrival] = useState("");
   const [confirmation, setConfirmation] = useState("");
 
-  // Search state
-  const [searching, setSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<FlightResult | null>(null);
-  const [searchError, setSearchError] = useState("");
-
   // Period form
   const [who, setWho] = useState<"nicolas" | "taylor">("nicolas");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [label, setLabel] = useState("Work trip");
-
-  async function handleSearch() {
-    if (!flightNumber || !date) return;
-    setSearching(true);
-    setSearchResult(null);
-    setSearchError("");
-    try {
-      const res = await fetch(`/api/flight-lookup?flight=${encodeURIComponent(flightNumber)}&date=${encodeURIComponent(date)}`);
-      const data = await res.json();
-      if (data.error) {
-        setSearchError(data.error);
-      } else {
-        setSearchResult(data);
-      }
-    } catch {
-      setSearchError("Search failed. Please enter details manually.");
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  function applyResult(result: FlightResult) {
-    setAirline(result.airline);
-    setDeparture(result.departure);
-    setArrival(result.arrival);
-    setSearchResult(null);
-  }
 
   function handleAddFlight() {
     if (!date || !flightNumber) return;
@@ -87,7 +46,7 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
     };
     onAddFlight(flight);
     setOpen(false);
-    resetFlight();
+    setDate(""); setFlightNumber(""); setAirline(""); setDeparture(""); setArrival(""); setConfirmation("");
   }
 
   function handleAddPeriod() {
@@ -97,15 +56,6 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
     setOpen(false);
     setPeriodStart(""); setPeriodEnd(""); setLabel("Work trip"); setWho("nicolas");
   }
-
-  function resetFlight() {
-    setDirection("LA → SF"); setDate(""); setFlightNumber("");
-    setAirline(""); setDeparture(""); setArrival(""); setConfirmation("");
-    setSearchResult(null); setSearchError("");
-  }
-
-  const canSearch = !!flightNumber && !!date;
-  const canAdd = !!date && !!flightNumber;
 
   return (
     <>
@@ -124,10 +74,8 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
 
       {open && (
         <>
-          {/* Backdrop */}
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 100 }} />
 
-          {/* Modal */}
           <div style={{
             position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
             width: "min(460px, calc(100vw - 32px))", maxHeight: "calc(100vh - 48px)", overflowY: "auto",
@@ -153,7 +101,6 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
               ))}
             </div>
 
-            {/* Flight form */}
             {tab === "flight" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <FormRow label="Direction">
@@ -165,61 +112,9 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
                 <FormRow label="Date">
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
                 </FormRow>
-
-                {/* Flight # with search */}
                 <FormRow label="Flight #">
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input
-                      type="text" placeholder="DL2267"
-                      value={flightNumber}
-                      onChange={(e) => { setFlightNumber(e.target.value.toUpperCase()); setSearchResult(null); setSearchError(""); }}
-                      style={{ ...inputStyle, flex: 1 }}
-                    />
-                    <button
-                      onClick={handleSearch}
-                      disabled={!canSearch || searching}
-                      style={{
-                        padding: "7px 12px", borderRadius: 6, border: "1px solid var(--border)",
-                        background: canSearch && !searching ? "var(--accent)" : "var(--bg-elevated)",
-                        color: canSearch && !searching ? "#fff" : "var(--text-tertiary)",
-                        fontSize: 12, fontWeight: 500, cursor: canSearch && !searching ? "pointer" : "not-allowed",
-                        whiteSpace: "nowrap", flexShrink: 0,
-                      }}
-                    >
-                      {searching ? "..." : "Look up"}
-                    </button>
-                  </div>
+                  <input type="text" placeholder="DL2267" value={flightNumber} onChange={(e) => setFlightNumber(e.target.value.toUpperCase())} style={inputStyle} />
                 </FormRow>
-
-                {/* Search result card */}
-                {searchResult && (
-                  <div
-                    onClick={() => applyResult(searchResult)}
-                    style={{
-                      marginLeft: 122, background: "rgba(94,106,210,0.08)", border: "1px solid rgba(94,106,210,0.25)",
-                      borderRadius: 8, padding: "10px 14px", cursor: "pointer",
-                      display: "flex", flexDirection: "column", gap: 4,
-                    }}
-                    title="Click to apply"
-                  >
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)" }}>
-                      {searchResult.departureAirport} → {searchResult.arrivalAirport} · {searchResult.flightNumber}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
-                      {searchResult.airline}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                      {fmt12(searchResult.departure)} → {fmt12(searchResult.arrival)}
-                    </div>
-                    <div style={{ fontSize: 10, color: "#818cf8", marginTop: 2 }}>↑ tap to apply</div>
-                  </div>
-                )}
-
-                {searchError && (
-                  <div style={{ marginLeft: 122, fontSize: 11, color: "#f87171" }}>{searchError}</div>
-                )}
-
-                {/* Remaining fields */}
                 <FormRow label="Airline">
                   <input type="text" placeholder="Delta Air Lines" value={airline} onChange={(e) => setAirline(e.target.value)} style={inputStyle} />
                 </FormRow>
@@ -232,14 +127,12 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
                 <FormRow label="Confirmation">
                   <input type="text" placeholder="JKDZSH" value={confirmation} onChange={(e) => setConfirmation(e.target.value.toUpperCase())} style={inputStyle} />
                 </FormRow>
-
-                <button onClick={handleAddFlight} disabled={!canAdd} style={submitStyle(!canAdd)}>
+                <button onClick={handleAddFlight} disabled={!date || !flightNumber} style={submitStyle(!date || !flightNumber)}>
                   Add Flight
                 </button>
               </div>
             )}
 
-            {/* Period form */}
             {tab === "period" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 <FormRow label="Who">
@@ -267,13 +160,6 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
       )}
     </>
   );
-}
-
-function fmt12(time: string) {
-  if (!time || time === "TBD") return time;
-  const [h, m] = time.split(":").map(Number);
-  const period = h >= 12 ? "PM" : "AM";
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 function FormRow({ label, children }: { label: string; children: React.ReactNode }) {
