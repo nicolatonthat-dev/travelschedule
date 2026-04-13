@@ -21,6 +21,7 @@ export interface TravelPeriod {
 }
 
 export const travelPeriods: TravelPeriod[] = [
+  { start: "2026-04-14", end: "2026-04-14", city: "SF", label: "Day trip" },
   { start: "2026-04-27", end: "2026-05-08", city: "SF", label: "Work trip" },
   { start: "2026-05-10", end: "2026-05-15", city: "SF", label: "Work trip" },
   // June trips — add when confirmed
@@ -32,6 +33,28 @@ export const taylorPeriods: TravelPeriod[] = [
 ];
 
 export const flights: Flight[] = [
+  {
+    id: "0a",
+    date: "2026-04-14",
+    direction: "LA → SF",
+    flightNumber: "DL1421",
+    airline: "Delta Air Lines",
+    departure: "06:20",
+    arrival: "07:40",
+    departureAirport: "LAX",
+    arrivalAirport: "SFO",
+  },
+  {
+    id: "0b",
+    date: "2026-04-14",
+    direction: "SF → LA",
+    flightNumber: "DL2267",
+    airline: "Delta Air Lines",
+    departure: "16:17",
+    arrival: "17:35",
+    departureAirport: "SFO",
+    arrivalAirport: "LAX",
+  },
   {
     id: "1",
     date: "2026-04-27",

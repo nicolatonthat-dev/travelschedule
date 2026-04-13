@@ -89,18 +89,18 @@ export default function Home() {
     (p) => p.city === "SF" && today >= p.start && today <= p.end
   );
 
-  const nextTrip = travelPeriods
-    .filter((p) => p.city === "SF" && p.start > today)
-    .sort((a, b) => a.start.localeCompare(b.start))[0];
-
+  // Next Trip: always derived from flights — next outbound then next return after it
   const nextFlightOut = upcomingFlights.find((f) => f.direction === "LA → SF");
-
-  // Return flight: the SF→LA flight on or before the next trip's end date
-  const returnFlight = nextTrip
+  const returnFlight = nextFlightOut
     ? flights
-        .filter((f) => f.direction === "SF → LA" && f.date <= nextTrip.end && f.date >= nextTrip.start)
+        .filter((f) => f.direction === "SF → LA" && f.date >= nextFlightOut.date)
         .sort((a, b) => a.date.localeCompare(b.date))[0]
     : undefined;
+
+  // nextTrip still used for calendar + date range display
+  const nextTrip = travelPeriods
+    .filter((p) => p.city === "SF" && p.end >= today)
+    .sort((a, b) => a.start.localeCompare(b.start))[0];
 
   return (
     <main style={{ background: "var(--bg-primary)", minHeight: "100vh" }}>
@@ -238,14 +238,14 @@ export default function Home() {
                 <span>✈</span> Next Trip
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {nextTrip && (
+                {nextFlightOut && (
                   <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                    {formatShortDate(nextTrip.start)} – {formatShortDate(nextTrip.end)}
+                    {formatShortDate(nextFlightOut.date)}{returnFlight ? ` – ${formatShortDate(returnFlight.date)}` : ""}
                   </div>
                 )}
-                {nextTrip && (
+                {nextFlightOut && (
                   <a
-                    href={buildGCalUrl(nextTrip, nextFlightOut, returnFlight)}
+                    href={buildGCalUrl(nextTrip ?? { start: nextFlightOut.date, end: returnFlight?.date ?? nextFlightOut.date, city: "SF" }, nextFlightOut, returnFlight)}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -485,7 +485,7 @@ function FlightLeg({ label, flight, color }: { label: string; flight: Flight; co
       </div>
 
       {/* Flight number */}
-      <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
+      <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 500, letterSpacing: "0.04em" }}>
         {flight.flightNumber}
       </div>
 
