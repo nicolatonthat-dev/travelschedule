@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import MonthCalendar from "./components/MonthCalendar";
 import FlightCard from "./components/FlightCard";
 import AddModal from "./components/AddModal";
+import FlightDetailModal from "./components/FlightDetailModal";
 import { travelPeriods as staticTravelPeriods, taylorPeriods as staticTaylorPeriods, flights as staticFlights } from "./data/travel";
 import { Flight, TravelPeriod } from "./data/travel";
 
@@ -11,19 +12,30 @@ export default function Home() {
   const [extraFlights, setExtraFlights] = useState<Flight[]>([]);
   const [extraTravelPeriods, setExtraTravelPeriods] = useState<TravelPeriod[]>([]);
   const [extraTaylorPeriods, setExtraTaylorPeriods] = useState<TravelPeriod[]>([]);
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const [editedFlights, setEditedFlights] = useState<Flight[]>([]);
+  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
 
   useEffect(() => {
     try {
       const ef = localStorage.getItem("extra_flights");
       const ep = localStorage.getItem("extra_travel_periods");
       const et = localStorage.getItem("extra_taylor_periods");
+      const di = localStorage.getItem("deleted_flight_ids");
+      const ed = localStorage.getItem("edited_flights");
       if (ef) setExtraFlights(JSON.parse(ef));
       if (ep) setExtraTravelPeriods(JSON.parse(ep));
       if (et) setExtraTaylorPeriods(JSON.parse(et));
+      if (di) setDeletedIds(JSON.parse(di));
+      if (ed) setEditedFlights(JSON.parse(ed));
     } catch {}
   }, []);
 
-  const flights = [...staticFlights, ...extraFlights];
+  const flights = [
+    ...staticFlights.map((f) => editedFlights.find((e) => e.id === f.id) ?? f),
+    ...extraFlights.map((f) => editedFlights.find((e) => e.id === f.id) ?? f),
+  ].filter((f) => !deletedIds.includes(f.id));
+
   const travelPeriods = [...staticTravelPeriods, ...extraTravelPeriods];
   const taylorPeriods = [...staticTaylorPeriods, ...extraTaylorPeriods];
 
@@ -43,6 +55,24 @@ export default function Home() {
       setExtraTravelPeriods(updated);
       localStorage.setItem("extra_travel_periods", JSON.stringify(updated));
     }
+  }
+
+  function handleSaveFlight(updated: Flight) {
+    const next = [...editedFlights.filter((e) => e.id !== updated.id), updated];
+    setEditedFlights(next);
+    localStorage.setItem("edited_flights", JSON.stringify(next));
+    // Also update extraFlights if it's a custom flight
+    if (updated.id.startsWith("custom-")) {
+      const next2 = extraFlights.map((f) => f.id === updated.id ? updated : f);
+      setExtraFlights(next2);
+      localStorage.setItem("extra_flights", JSON.stringify(next2));
+    }
+  }
+
+  function handleDeleteFlight(id: string) {
+    const next = [...deletedIds, id];
+    setDeletedIds(next);
+    localStorage.setItem("deleted_flight_ids", JSON.stringify(next));
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -294,7 +324,7 @@ export default function Home() {
           {upcomingFlights.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {upcomingFlights.map((flight) => (
-                <FlightCard key={flight.id} flight={flight} />
+                <FlightCard key={flight.id} flight={flight} onClick={() => setSelectedFlight(flight)} />
               ))}
             </div>
           ) : (
@@ -308,7 +338,7 @@ export default function Home() {
             <SectionHeader label="Past Flights" count={pastFlights.length} />
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {pastFlights.map((flight) => (
-                <FlightCard key={flight.id} flight={flight} />
+                <FlightCard key={flight.id} flight={flight} onClick={() => setSelectedFlight(flight)} />
               ))}
             </div>
           </section>
@@ -318,6 +348,15 @@ export default function Home() {
           Made with love ♡
         </div>
       </div>
+
+      {selectedFlight && (
+        <FlightDetailModal
+          flight={selectedFlight}
+          onSave={handleSaveFlight}
+          onDelete={handleDeleteFlight}
+          onClose={() => setSelectedFlight(null)}
+        />
+      )}
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { Flight } from "../data/travel";
 
 interface FlightCardProps {
   flight: Flight;
+  onClick?: () => void;
 }
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -57,7 +58,7 @@ function buildFlightGCalUrl(flight: Flight) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-export default function FlightCard({ flight }: FlightCardProps) {
+export default function FlightCard({ flight, onClick }: FlightCardProps) {
   const isOutbound = flight.direction === "LA → SF";
 
   return (
@@ -71,9 +72,11 @@ export default function FlightCard({ flight }: FlightCardProps) {
         alignItems: "center",
         gap: 16,
         transition: "border-color 0.15s",
+        cursor: onClick ? "pointer" : "default",
       }}
+      onClick={onClick}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = "var(--bg-hover)";
+        (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.15)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = "var(--border)";
@@ -156,6 +159,7 @@ export default function FlightCard({ flight }: FlightCardProps) {
           target="_blank"
           rel="noopener noreferrer"
           title="Add to Google Calendar"
+          onClick={(e) => e.stopPropagation()}
           style={{
             display: "flex",
             alignItems: "center",
