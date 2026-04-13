@@ -1,26 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-primary: #080809;
+  --bg-surface: #1c1c1f;
+  --bg-elevated: #242428;
+  --bg-hover: #1e1e22;
+  --border: #222226;
+  --border-subtle: #141416;
+  --text-primary: #e8e8ed;
+  --text-secondary: #8b8b99;
+  --text-tertiary: #55555f;
+  --accent: #5e6ad2;
+  --accent-hover: #6b77e0;
+  --accent-subtle: rgba(94, 106, 210, 0.12);
+  --accent-glow: rgba(94, 106, 210, 0.25);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
