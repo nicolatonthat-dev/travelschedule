@@ -149,12 +149,11 @@ export default function MonthCalendar({ year, month, travelPeriods, taylorPeriod
                   fontWeight: nicolasInSF ? 600 : 400,
                   color,
                   background: bg,
-                  borderRadius,
+                  borderRadius: isToday && !nicolasInSF ? "4px" : borderRadius,
                   outline: isToday
                     ? `1.5px solid ${nicolasInSF ? "#fd5a1e" : "rgba(255,255,255,0.35)"}`
                     : "none",
                   outlineOffset: -1,
-                  borderRadius: isToday && !nicolasInSF ? "4px" : borderRadius,
                   cursor: "default",
                 }}
                 title={
