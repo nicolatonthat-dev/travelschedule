@@ -57,7 +57,7 @@ export default function MonthCalendar({ year, month, travelPeriods, taylorPeriod
   return (
     <div
       style={{
-        background: "var(--bg-surface)",
+        background: "transparent",
         border: "1px solid var(--border)",
         borderRadius: 10,
         overflow: "hidden",

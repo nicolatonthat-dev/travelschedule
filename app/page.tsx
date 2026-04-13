@@ -122,7 +122,7 @@ export default function Home() {
             style={{
               borderRadius: 12,
               border: "1px solid rgba(94,106,210,0.2)",
-              background: "linear-gradient(135deg, rgba(94,106,210,0.08) 0%, rgba(139,92,246,0.05) 100%)",
+              background: "transparent",
               padding: "24px 28px",
               display: "flex",
               alignItems: "center",
@@ -144,7 +144,7 @@ export default function Home() {
             style={{
               borderRadius: 12,
               border: "1px solid var(--border)",
-              background: "var(--bg-surface)",
+              background: "transparent",
               overflow: "hidden",
             }}
           >

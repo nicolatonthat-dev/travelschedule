@@ -29,7 +29,7 @@ export default function FlightCard({ flight }: FlightCardProps) {
   return (
     <div
       style={{
-        background: "var(--bg-surface)",
+        background: "transparent",
         border: "1px solid var(--border)",
         borderRadius: 8,
         padding: "14px 16px",
