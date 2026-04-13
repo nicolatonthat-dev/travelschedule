@@ -10,7 +10,6 @@ export interface Flight {
   arrival: string;   // HH:MM
   departureAirport: string;
   arrivalAirport: string;
-  confirmation?: string;
   notes?: string;
 }
 
@@ -39,7 +38,6 @@ export const flights: Flight[] = [
     direction: "LA → SF",
     flightNumber: "DL2267",
     airline: "Delta Air Lines",
-    confirmation: "JKDZSH",
     departure: "13:40",
     arrival: "15:03",
     departureAirport: "LAX",
@@ -51,7 +49,6 @@ export const flights: Flight[] = [
     direction: "SF → LA",
     flightNumber: "DL1559",
     airline: "Delta Air Lines",
-    confirmation: "JKDZSH",
     departure: "18:25",
     arrival: "19:57",
     departureAirport: "SFO",

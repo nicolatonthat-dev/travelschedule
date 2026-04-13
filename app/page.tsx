@@ -438,10 +438,8 @@ function buildGCalUrl(trip: TravelPeriod, outbound: Flight, returnFlight?: Fligh
   const details = [
     `✈ Departs: ${outbound.departureAirport} → ${outbound.arrivalAirport} on ${trip.start}`,
     outbound.departure !== "TBD" ? `  ${formatTime12(outbound.departure)} → ${formatTime12(outbound.arrival)} · ${outbound.flightNumber}` : `  ${outbound.flightNumber}`,
-    outbound.confirmation ? `  Confirmation: ${outbound.confirmation}` : "",
     returnFlight ? `\n↩ Returns: ${returnFlight.departureAirport} → ${returnFlight.arrivalAirport} on ${trip.end}` : "",
     returnFlight && returnFlight.departure !== "TBD" ? `  ${formatTime12(returnFlight.departure)} → ${formatTime12(returnFlight.arrival)} · ${returnFlight.flightNumber}` : "",
-    returnFlight?.confirmation ? `  Confirmation: ${returnFlight.confirmation}` : "",
   ].filter(Boolean).join("\n");
 
   const params = new URLSearchParams({
@@ -491,12 +489,6 @@ function FlightLeg({ label, flight, color }: { label: string; flight: Flight; co
         {flight.flightNumber}
       </div>
 
-      {/* Confirmation ID */}
-      {flight.confirmation && (
-        <div style={{ fontSize: 11, color: "var(--text-tertiary)", fontFamily: "monospace", letterSpacing: "0.08em" }}>
-          {flight.confirmation}
-        </div>
-      )}
     </div>
   );
 }

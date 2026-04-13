@@ -17,7 +17,6 @@ export default function FlightDetailModal({ flight, onSave, onDelete, onClose }:
   const [airline, setAirline] = useState(flight.airline);
   const [departure, setDeparture] = useState(flight.departure === "TBD" ? "" : flight.departure);
   const [arrival, setArrival] = useState(flight.arrival === "TBD" ? "" : flight.arrival);
-  const [confirmation, setConfirmation] = useState(flight.confirmation ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function handleSave() {
@@ -33,7 +32,6 @@ export default function FlightDetailModal({ flight, onSave, onDelete, onClose }:
       arrival: arrival || "TBD",
       departureAirport: isOutbound ? "LAX" : "SFO",
       arrivalAirport: isOutbound ? "SFO" : "LAX",
-      confirmation: confirmation || undefined,
     });
     onClose();
   }
@@ -76,9 +74,6 @@ export default function FlightDetailModal({ flight, onSave, onDelete, onClose }:
           </FormRow>
           <FormRow label="Arrives">
             <input type="time" value={arrival} onChange={(e) => setArrival(e.target.value)} style={inputStyle} />
-          </FormRow>
-          <FormRow label="Confirmation">
-            <input type="text" placeholder="Optional" value={confirmation} onChange={(e) => setConfirmation(e.target.value.toUpperCase())} style={inputStyle} />
           </FormRow>
         </div>
 

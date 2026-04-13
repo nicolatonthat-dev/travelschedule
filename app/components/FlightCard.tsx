@@ -43,7 +43,6 @@ function buildFlightGCalUrl(flight: Flight) {
     `Flight: ${flight.flightNumber}`,
     flight.departure !== "TBD" ? `Departure: ${formatTime(flight.departure)}` : "Departure: TBD",
     flight.arrival !== "TBD" ? `Arrival: ${formatTime(flight.arrival)}` : "Arrival: TBD",
-    flight.confirmation ? `Confirmation: ${flight.confirmation}` : "",
     flight.airline ? `Airline: ${flight.airline}` : "",
   ].filter(Boolean).join("\n");
 
@@ -127,11 +126,6 @@ export default function FlightCard({ flight, onClick }: FlightCardProps) {
         </div>
         <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
           {formatDate(flight.date)} · {flight.flightNumber}
-          {flight.confirmation && (
-            <span style={{ marginLeft: 6, color: "var(--text-tertiary)" }}>
-              · <span style={{ fontFamily: "monospace", letterSpacing: "0.05em" }}>{flight.confirmation}</span>
-            </span>
-          )}
         </div>
       </div>
 

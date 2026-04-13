@@ -21,7 +21,6 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
   const [airline, setAirline] = useState("");
   const [departure, setDeparture] = useState("");
   const [arrival, setArrival] = useState("");
-  const [confirmation, setConfirmation] = useState("");
 
   // Period form
   const [who, setWho] = useState<"nicolas" | "taylor">("nicolas");
@@ -42,11 +41,10 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
       arrival: arrival || "TBD",
       departureAirport: isOutbound ? "LAX" : "SFO",
       arrivalAirport: isOutbound ? "SFO" : "LAX",
-      confirmation: confirmation || undefined,
     };
     onAddFlight(flight);
     setOpen(false);
-    setDate(""); setFlightNumber(""); setAirline(""); setDeparture(""); setArrival(""); setConfirmation("");
+    setDate(""); setFlightNumber(""); setAirline(""); setDeparture(""); setArrival("");
   }
 
   function handleAddPeriod() {
@@ -123,9 +121,6 @@ export default function AddModal({ onAddFlight, onAddPeriod }: AddModalProps) {
                 </FormRow>
                 <FormRow label="Arrives">
                   <input type="time" value={arrival} onChange={(e) => setArrival(e.target.value)} style={inputStyle} />
-                </FormRow>
-                <FormRow label="Confirmation">
-                  <input type="text" placeholder="JKDZSH" value={confirmation} onChange={(e) => setConfirmation(e.target.value.toUpperCase())} style={inputStyle} />
                 </FormRow>
                 <button onClick={handleAddFlight} disabled={!date || !flightNumber} style={submitStyle(!date || !flightNumber)}>
                   Add Flight
