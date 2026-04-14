@@ -139,11 +139,23 @@ export default function Home() {
     (p) => p.city === "SF" && today >= p.start && today <= p.end
   );
 
-  // When in SF, show the next return flight (SF → LA)
-  const nextReturn = upcomingFlights.find((f) => f.direction === "SF → LA");
+  // ── Current trip (when inSF) ────────────────────────────────────────────────
+  const currentPeriod = travelPeriods.find(
+    (p) => p.city === "SF" && today >= p.start && today <= p.end
+  );
+  const currentOutbound = currentPeriod
+    ? flights.find((f) => f.direction === "LA → SF" && f.date >= currentPeriod.start && f.date <= currentPeriod.end)
+    : undefined;
+  const currentReturn = currentPeriod
+    ? flights.find((f) => f.direction === "SF → LA" && f.date >= currentPeriod.start && f.date <= currentPeriod.end)
+    : undefined;
 
-  // When in LA, show the next outbound + its paired return
-  const nextFlightOut = upcomingFlights.find((f) => f.direction === "LA → SF");
+  // ── Next trip — skips current if in SF ──────────────────────────────────────
+  const nextFlightOut = inSF && currentPeriod
+    ? flights.filter((f) => f.direction === "LA → SF" && f.date > currentPeriod.end)
+             .sort((a, b) => a.date.localeCompare(b.date))[0]
+    : upcomingFlights.find((f) => f.direction === "LA → SF");
+
   const returnFlight = nextFlightOut
     ? flights
         .filter((f) => f.direction === "SF → LA" && f.date >= nextFlightOut.date)
@@ -152,7 +164,7 @@ export default function Home() {
 
   // nextTrip still used for calendar + date range display
   const nextTrip = travelPeriods
-    .filter((p) => p.city === "SF" && p.end >= today)
+    .filter((p) => p.city === "SF" && p.end >= today && (!currentPeriod || p.start > currentPeriod.end))
     .sort((a, b) => a.start.localeCompare(b.start))[0];
 
   if (loading) return (
@@ -251,130 +263,85 @@ export default function Home() {
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px", display: "flex", flexDirection: "column", gap: 40 }}>
 
-        {/* Hero status card */}
-        {inSF ? (
-          <div
-            style={{
-              borderRadius: 12,
-              border: "1px solid rgba(94,106,210,0.2)",
-              background: "transparent",
-              overflow: "hidden",
-            }}
-          >
-            {/* Header */}
-            <div
-              style={{
-                padding: "10px 20px",
-                borderBottom: "1px solid var(--border-subtle)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "#818cf8", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                <span>📍</span> Currently in SF
-              </div>
-              {nextReturn && (
-                <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-                  Returns {formatShortDate(nextReturn.date)}
+        {/* Hero cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+          {/* ── Current Trip banner (only when inSF) ── */}
+          {inSF && currentPeriod && (
+            <div style={{ borderRadius: 12, border: "1px solid rgba(253,90,30,0.25)", background: "transparent", overflow: "hidden" }}>
+              {/* Header */}
+              <div style={{ padding: "10px 20px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 6px #4ade80" }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#fd5a1e", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                    Current Trip
+                  </span>
                 </div>
-              )}
+                <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                  {formatShortDate(currentPeriod.start)}{currentPeriod.start !== currentPeriod.end ? ` – ${formatShortDate(currentPeriod.end)}` : ""}
+                  {currentPeriod.label ? ` · ${currentPeriod.label}` : ""}
+                </div>
+              </div>
+              {/* Two legs */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr" }}>
+                {currentOutbound ? (
+                  <FlightLeg label="Departed" flight={currentOutbound} color="#fd5a1e" showFlightAware />
+                ) : (
+                  <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Outbound TBD</span>
+                  </div>
+                )}
+                <div style={{ background: "var(--border-subtle)", margin: "16px 0" }} />
+                {currentReturn ? (
+                  <FlightLeg label="Returns" flight={currentReturn} color="#4a9fd4" showFlightAware />
+                ) : (
+                  <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Return TBD</span>
+                  </div>
+                )}
+              </div>
             </div>
-            {/* Return flight leg */}
-            {nextReturn ? (
-              <FlightLeg label="Returns" flight={nextReturn} color="#4a9fd4" />
-            ) : (
-              <div style={{ padding: "20px 24px" }}>
-                <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No return flight scheduled yet</span>
-              </div>
-            )}
-          </div>
-        ) : nextFlightOut ? (
-          <div
-            style={{
-              borderRadius: 12,
-              border: "1px solid var(--border)",
-              background: "transparent",
-              overflow: "hidden",
-            }}
-          >
-            {/* Banner label */}
-            <div
-              style={{
-                padding: "10px 20px",
-                borderBottom: "1px solid var(--border-subtle)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                <span>✈</span> Next Trip
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                {nextFlightOut && (
+          )}
+
+          {/* ── Next Trip card ── */}
+          {nextFlightOut ? (
+            <div style={{ borderRadius: 12, border: "1px solid var(--border)", background: "transparent", overflow: "hidden" }}>
+              <div style={{ padding: "10px 20px", borderBottom: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  <span>✈</span> Next Trip
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
                     {formatShortDate(nextFlightOut.date)}{returnFlight ? ` – ${formatShortDate(returnFlight.date)}` : ""}
                   </div>
-                )}
-                {nextFlightOut && (
                   <a
                     href={buildGCalUrl(nextTrip ?? { start: nextFlightOut.date, end: returnFlight?.date ?? nextFlightOut.date, city: "SF" }, nextFlightOut, returnFlight)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 11,
-                      fontWeight: 500,
-                      color: "var(--text-secondary)",
-                      background: "var(--bg-elevated)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 6,
-                      padding: "3px 10px",
-                      textDecoration: "none",
-                      cursor: "pointer",
-                    }}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 500, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 10px", textDecoration: "none", cursor: "pointer" }}
                   >
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
                   </a>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr" }}>
+                <FlightLeg label="Departs" flight={nextFlightOut} color="#fd5a1e" />
+                <div style={{ background: "var(--border-subtle)", margin: "16px 0" }} />
+                {returnFlight ? (
+                  <FlightLeg label="Returns" flight={returnFlight} color="#4a9fd4" />
+                ) : (
+                  <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Return TBD</span>
+                  </div>
                 )}
               </div>
             </div>
+          ) : !inSF ? (
+            <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>No upcoming flights scheduled.</div>
+          ) : null}
 
-            {/* Two legs */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr" }}>
-              {/* Outbound leg */}
-              <FlightLeg
-                label="Departs"
-                flight={nextFlightOut}
-                color="#fd5a1e"
-              />
-
-              {/* Divider */}
-              <div style={{ background: "var(--border-subtle)", margin: "16px 0" }} />
-
-              {/* Return leg */}
-              {returnFlight ? (
-                <FlightLeg
-                  label="Returns"
-                  flight={returnFlight}
-                  color="#4a9fd4"
-                />
-              ) : (
-                <div style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Return TBD</span>
-                </div>
-              )}
-            </div>
-
-          </div>
-        ) : (
-          <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>No upcoming flights scheduled.</div>
-        )}
+        </div>
 
         {/* Calendars */}
         <section>
@@ -570,7 +537,23 @@ function buildGCalUrl(trip: TravelPeriod, outbound: Flight, returnFlight?: Fligh
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function FlightLeg({ label, flight, color }: { label: string; flight: Flight; color: string }) {
+// Maps IATA airline codes to ICAO codes for FlightAware URLs
+const IATA_TO_ICAO: Record<string, string> = {
+  DL: "DAL", AA: "AAL", UA: "UAL", WN: "SWA",
+  B6: "JBU", AS: "ASA", F9: "FFT", NK: "NKS",
+  SW: "SWA", G4: "AAY", SY: "SCX",
+};
+
+function buildFlightAwareUrl(flightNumber: string) {
+  const m = flightNumber.match(/^([A-Z]{2})(\d+)$/);
+  if (!m) return `https://www.flightaware.com/live/flight/${flightNumber}`;
+  const icao = IATA_TO_ICAO[m[1]] ?? m[1];
+  return `https://www.flightaware.com/live/flight/${icao}${m[2]}`;
+}
+
+function FlightLeg({ label, flight, color, showFlightAware = false }: {
+  label: string; flight: Flight; color: string; showFlightAware?: boolean;
+}) {
   return (
     <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
       {/* Label */}
@@ -601,11 +584,35 @@ function FlightLeg({ label, flight, color }: { label: string; flight: Flight; co
           : "Times TBD"}
       </div>
 
-      {/* Flight number */}
-      <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 500, letterSpacing: "0.04em" }}>
-        {flight.flightNumber}
-      </div>
-
+      {/* Flight number — clickable to FlightAware when showFlightAware */}
+      {showFlightAware ? (
+        <a
+          href={buildFlightAwareUrl(flight.flightNumber)}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Track on FlightAware"
+          style={{
+            fontSize: 12, fontWeight: 600, letterSpacing: "0.04em",
+            color: "#818cf8",
+            textDecoration: "none",
+            display: "inline-flex", alignItems: "center", gap: 5,
+            width: "fit-content",
+            borderBottom: "1px dashed rgba(129,140,248,0.45)",
+            paddingBottom: 1,
+          }}
+        >
+          {flight.flightNumber}
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      ) : (
+        <div style={{ fontSize: 12, color: "#818cf8", fontWeight: 500, letterSpacing: "0.04em" }}>
+          {flight.flightNumber}
+        </div>
+      )}
     </div>
   );
 }
