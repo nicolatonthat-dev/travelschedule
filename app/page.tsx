@@ -409,7 +409,7 @@ export default function Home() {
 
         {/* Travel Planner */}
         <section>
-          <TravelPlanner confirmedPeriods={travelPeriods} />
+          <TravelPlanner confirmedPeriods={travelPeriods} onRefresh={loadData} />
         </section>
 
         {/* Past Flights */}

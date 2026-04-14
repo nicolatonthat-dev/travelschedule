@@ -23,7 +23,7 @@ export interface TravelPeriod {
 export const travelPeriods: TravelPeriod[] = [
   { start: "2026-04-14", end: "2026-04-14", city: "SF", label: "Day trip" },
   { start: "2026-04-27", end: "2026-05-08", city: "SF", label: "Work trip" },
-  { start: "2026-05-10", end: "2026-05-15", city: "SF", label: "Work trip" },
+  // { start: "2026-05-10", end: "2026-05-15", city: "SF", label: "Work trip" }, // not yet booked
   // June trips — add when confirmed
 ];
 
@@ -77,26 +77,5 @@ export const flights: Flight[] = [
     departureAirport: "SFO",
     arrivalAirport: "LAX",
   },
-  {
-    id: "3",
-    date: "2026-05-10",
-    direction: "LA → SF",
-    flightNumber: "AA2345",
-    airline: "American Airlines",
-    departure: "07:00",
-    arrival: "08:20",
-    departureAirport: "LAX",
-    arrivalAirport: "SFO",
-  },
-  {
-    id: "4",
-    date: "2026-05-15",
-    direction: "SF → LA",
-    flightNumber: "AA6789",
-    airline: "American Airlines",
-    departure: "18:00",
-    arrival: "19:20",
-    departureAirport: "SFO",
-    arrivalAirport: "LAX",
-  },
+  // May 10–15 not yet booked — being planned
 ];

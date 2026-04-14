@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TravelPeriod } from "../data/travel";
+import BookingModal from "./BookingModal";
 
 interface PlannedRange {
   id: string;
@@ -226,15 +227,17 @@ function SubHeader({ label, count, action }: { label: string; count?: number; ac
 
 interface TravelPlannerProps {
   confirmedPeriods: TravelPeriod[];
+  onRefresh: () => void;
 }
 
-export default function TravelPlanner({ confirmedPeriods }: TravelPlannerProps) {
+export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPlannerProps) {
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
   const [plannedRanges, setPlannedRanges] = useState<PlannedRange[]>([]);
   const [selectionStart, setSelectionStart] = useState<string | null>(null);
   const [hoverDate, setHoverDate] = useState<string | null>(null);
+  const [bookingRange, setBookingRange] = useState<PlannedRange | null>(null);
 
   // All months from current month through December of current year
   const year = now.getFullYear();
@@ -373,19 +376,28 @@ export default function TravelPlanner({ confirmedPeriods }: TravelPlannerProps) 
               const borderColor = label === "LA Visit" ? "rgba(74,159,212,0.2)" : "rgba(253,90,30,0.2)";
               return (
                 <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, padding: "10px 14px", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                     <div style={{ width: 8, height: 8, borderRadius: 2, background: "#f59e0b", flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>
                       {formatDisplay(r.start)}{r.start !== r.end ? <> &rarr; {formatDisplay(r.end)}</> : null}
                     </span>
-                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
                       {nights === 0 ? "Day trip" : `${nights} night${nights !== 1 ? "s" : ""}`}
                     </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 11, fontWeight: 500, color, background: bgColor, border: `1px solid ${borderColor}`, borderRadius: 4, padding: "2px 8px", whiteSpace: "nowrap" }}>
                       {label}
                     </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <button
+                      onClick={() => setBookingRange(r)}
+                      style={{
+                        fontSize: 11, fontWeight: 600, cursor: "pointer", borderRadius: 5, padding: "4px 10px",
+                        background: "var(--accent)", border: "none", color: "#fff", whiteSpace: "nowrap",
+                      }}
+                    >
+                      Book
+                    </button>
                     <button
                       onClick={() => setPlannedRanges(prev => prev.filter(x => x.id !== r.id))}
                       style={{ fontSize: 14, color: "var(--text-tertiary)", background: "transparent", border: "none", cursor: "pointer", lineHeight: 1, padding: "0 2px" }}
@@ -400,6 +412,19 @@ export default function TravelPlanner({ confirmedPeriods }: TravelPlannerProps) 
           </div>
         )}
       </div>
+
+      {/* Booking modal */}
+      {bookingRange && (
+        <BookingModal
+          range={bookingRange}
+          onClose={() => setBookingRange(null)}
+          onBooked={(id) => {
+            setPlannedRanges(prev => prev.filter(r => r.id !== id));
+            setBookingRange(null);
+            onRefresh();
+          }}
+        />
+      )}
     </div>
   );
 }
