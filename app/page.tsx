@@ -6,6 +6,7 @@ import FlightCard from "./components/FlightCard";
 import AddModal from "./components/AddModal";
 import FlightDetailModal from "./components/FlightDetailModal";
 import TravelPlanner from "./components/TravelPlanner";
+import TripCard from "./components/TripCard";
 import { Flight, TravelPeriod } from "./data/travel";
 import { supabase } from "../lib/supabase";
 
@@ -109,6 +110,30 @@ export default function Home() {
   const pastFlights = flights
     .filter((f) => f.date < today)
     .sort((a, b) => b.date.localeCompare(a.date));
+
+  // Group flights into trips (outbound LA→SF paired with next SF→LA)
+  function groupIntoTrips(flights: Flight[]) {
+    const sorted = [...flights].sort((a, b) => a.date.localeCompare(b.date));
+    const used = new Set<string>();
+    const trips: { outbound: Flight; ret?: Flight }[] = [];
+    for (const f of sorted) {
+      if (used.has(f.id)) continue;
+      if (f.direction === "LA → SF") {
+        const ret = sorted.find(r => !used.has(r.id) && r.direction === "SF → LA" && r.date >= f.date);
+        trips.push({ outbound: f, ret });
+        used.add(f.id);
+        if (ret) used.add(ret.id);
+      }
+    }
+    // Any orphaned SF→LA (edge case)
+    for (const f of sorted) {
+      if (!used.has(f.id)) trips.push({ outbound: f });
+    }
+    return trips;
+  }
+
+  const upcomingTrips = groupIntoTrips(upcomingFlights);
+  const pastTrips     = groupIntoTrips(pastFlights);
 
   const inSF = travelPeriods.some(
     (p) => p.city === "SF" && today >= p.start && today <= p.end
@@ -393,17 +418,23 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Upcoming Flights */}
+        {/* Upcoming Trips */}
         <section>
-          <SectionHeader label="Upcoming Flights" count={upcomingFlights.length} />
-          {upcomingFlights.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {upcomingFlights.map((flight) => (
-                <FlightCard key={flight.id} flight={flight} onClick={() => setSelectedFlight(flight)} />
+          <SectionHeader label="Upcoming Trips" count={upcomingTrips.length} />
+          {upcomingTrips.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {upcomingTrips.map(({ outbound, ret }) => (
+                <TripCard
+                  key={outbound.id}
+                  outbound={outbound}
+                  returnFlight={ret}
+                  travelPeriods={travelPeriods}
+                  onFlightClick={setSelectedFlight}
+                />
               ))}
             </div>
           ) : (
-            <EmptyState label="No upcoming flights scheduled" />
+            <EmptyState label="No upcoming trips scheduled" />
           )}
         </section>
 
@@ -412,13 +443,19 @@ export default function Home() {
           <TravelPlanner confirmedPeriods={travelPeriods} onRefresh={loadData} />
         </section>
 
-        {/* Past Flights */}
-        {pastFlights.length > 0 && (
+        {/* Past Trips */}
+        {pastTrips.length > 0 && (
           <section style={{ opacity: 0.5 }}>
-            <SectionHeader label="Past Flights" count={pastFlights.length} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {pastFlights.map((flight) => (
-                <FlightCard key={flight.id} flight={flight} onClick={() => setSelectedFlight(flight)} />
+            <SectionHeader label="Past Trips" count={pastTrips.length} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {pastTrips.map(({ outbound, ret }) => (
+                <TripCard
+                  key={outbound.id}
+                  outbound={outbound}
+                  returnFlight={ret}
+                  travelPeriods={travelPeriods}
+                  onFlightClick={setSelectedFlight}
+                />
               ))}
             </div>
           </section>
