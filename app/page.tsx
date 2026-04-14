@@ -5,6 +5,7 @@ import MonthCalendar from "./components/MonthCalendar";
 import FlightCard from "./components/FlightCard";
 import AddModal from "./components/AddModal";
 import FlightDetailModal from "./components/FlightDetailModal";
+import TravelPlanner from "./components/TravelPlanner";
 import { Flight, TravelPeriod } from "./data/travel";
 import { supabase } from "../lib/supabase";
 
@@ -37,6 +38,7 @@ export default function Home() {
   const [taylorPeriods, setTaylorPeriods] = useState<TravelPeriod[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [loading, setLoading] = useState(true);
+  const [calOffset, setCalOffset] = useState(0);
 
   async function loadData() {
     const [{ data: flightRows }, { data: periodRows }] = await Promise.all([
@@ -96,7 +98,9 @@ export default function Home() {
     await loadData();
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  // Use local date — not UTC — so the pill/banner don't flip at 5pm PDT
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
 
   const upcomingFlights = flights
     .filter((f) => f.date >= today)
@@ -110,7 +114,10 @@ export default function Home() {
     (p) => p.city === "SF" && today >= p.start && today <= p.end
   );
 
-  // Next Trip: always derived from flights — next outbound then next return after it
+  // When in SF, show the next return flight (SF → LA)
+  const nextReturn = upcomingFlights.find((f) => f.direction === "SF → LA");
+
+  // When in LA, show the next outbound + its paired return
   const nextFlightOut = upcomingFlights.find((f) => f.direction === "LA → SF");
   const returnFlight = nextFlightOut
     ? flights
@@ -226,21 +233,36 @@ export default function Home() {
               borderRadius: 12,
               border: "1px solid rgba(94,106,210,0.2)",
               background: "transparent",
-              padding: "24px 28px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 16,
+              overflow: "hidden",
             }}
           >
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 600, color: "var(--text-primary)", marginBottom: 6 }}>
-                I&apos;m in San Francisco
+            {/* Header */}
+            <div
+              style={{
+                padding: "10px 20px",
+                borderBottom: "1px solid var(--border-subtle)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "#818cf8", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                <span>📍</span> Currently in SF
               </div>
-              <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                Check the calendar below for my return date
-              </div>
+              {nextReturn && (
+                <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                  Returns {formatShortDate(nextReturn.date)}
+                </div>
+              )}
             </div>
+            {/* Return flight leg */}
+            {nextReturn ? (
+              <FlightLeg label="Returns" flight={nextReturn} color="#4a9fd4" />
+            ) : (
+              <div style={{ padding: "20px 24px" }}>
+                <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>No return flight scheduled yet</span>
+              </div>
+            )}
           </div>
         ) : nextFlightOut ? (
           <div
@@ -331,7 +353,24 @@ export default function Home() {
 
         {/* Calendars */}
         <section>
-          <SectionHeader label="Calendar" />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              Calendar
+            </span>
+            <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                onClick={() => setCalOffset(o => o - 1)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, fontSize: 16, lineHeight: 1, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", userSelect: "none" }}
+                title="Previous months"
+              >‹</button>
+              <button
+                onClick={() => setCalOffset(o => o + 1)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, fontSize: 16, lineHeight: 1, color: "var(--text-secondary)", background: "var(--bg-elevated)", border: "1px solid var(--border)", borderRadius: 6, cursor: "pointer", userSelect: "none" }}
+                title="Next months"
+              >›</button>
+            </div>
+          </div>
           <div
             style={{
               display: "grid",
@@ -339,9 +378,18 @@ export default function Home() {
               gap: 16,
             }}
           >
-            <MonthCalendar year={2026} month={3} travelPeriods={travelPeriods} taylorPeriods={taylorPeriods} />
-            <MonthCalendar year={2026} month={4} travelPeriods={travelPeriods} taylorPeriods={taylorPeriods} />
-            <MonthCalendar year={2026} month={5} travelPeriods={travelPeriods} taylorPeriods={taylorPeriods} />
+            {[0, 1, 2].map(d => {
+              const date = new Date(new Date().getFullYear(), new Date().getMonth() + calOffset + d, 1);
+              return (
+                <MonthCalendar
+                  key={`${date.getFullYear()}-${date.getMonth()}`}
+                  year={date.getFullYear()}
+                  month={date.getMonth()}
+                  travelPeriods={travelPeriods}
+                  taylorPeriods={taylorPeriods}
+                />
+              );
+            })}
           </div>
         </section>
 
@@ -357,6 +405,11 @@ export default function Home() {
           ) : (
             <EmptyState label="No upcoming flights scheduled" />
           )}
+        </section>
+
+        {/* Travel Planner */}
+        <section>
+          <TravelPlanner confirmedPeriods={travelPeriods} />
         </section>
 
         {/* Past Flights */}

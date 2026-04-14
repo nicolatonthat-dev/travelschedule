@@ -39,7 +39,8 @@ const DAY_NAMES = ["S", "M", "T", "W", "T", "F", "S"];
 export default function MonthCalendar({ year, month, travelPeriods, taylorPeriods }: MonthCalendarProps) {
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
-  const today = new Date().toISOString().split("T")[0];
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
 
   const cells: (number | null)[] = [
     ...Array(firstDay).fill(null),
