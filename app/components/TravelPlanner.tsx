@@ -1,17 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { TravelPeriod } from "../data/travel";
+import { TravelPeriod, PlannedRange } from "../data/travel";
 import { supabase } from "../../lib/supabase";
 import BookingModal from "./BookingModal";
 import EditPlannedModal from "./EditPlannedModal";
-
-interface PlannedRange {
-  id: string;
-  start: string;
-  end: string;
-  who: "nicolas" | "taylor";
-}
 
 // Color palette per traveler
 const WHO_COLORS = {

@@ -20,6 +20,13 @@ export interface TravelPeriod {
   label?: string;
 }
 
+export interface PlannedRange {
+  id: string;
+  start: string; // YYYY-MM-DD
+  end: string;   // YYYY-MM-DD
+  who: "nicolas" | "taylor";
+}
+
 export const travelPeriods: TravelPeriod[] = [
   { start: "2026-04-14", end: "2026-04-14", city: "SF", label: "Day trip" },
   { start: "2026-04-27", end: "2026-05-08", city: "SF", label: "Work trip" },

@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-interface PlannedRange {
-  id: string;
-  start: string;
-  end: string;
-  who: "nicolas" | "taylor";
-}
+import { PlannedRange } from "../data/travel";
 
 interface EditPlannedModalProps {
   range: PlannedRange;
