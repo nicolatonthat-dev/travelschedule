@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TravelPeriod } from "../data/travel";
+import { supabase } from "../../lib/supabase";
 import BookingModal from "./BookingModal";
 
 interface PlannedRange {
@@ -239,6 +240,23 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
   const [hoverDate, setHoverDate] = useState<string | null>(null);
   const [bookingRange, setBookingRange] = useState<PlannedRange | null>(null);
 
+  // Load planned ranges from Supabase on mount
+  const loadPlannedRanges = useCallback(async () => {
+    const { data } = await supabase
+      .from("planned_ranges")
+      .select("*")
+      .order("start_date");
+    if (data) {
+      setPlannedRanges(data.map((r: Record<string, string>) => ({
+        id: r.id,
+        start: r.start_date,
+        end: r.end_date,
+      })));
+    }
+  }, []);
+
+  useEffect(() => { loadPlannedRanges(); }, [loadPlannedRanges]);
+
   // All months from current month through December of current year
   const year = now.getFullYear();
   const months = Array.from({ length: 12 - now.getMonth() }, (_, i) => ({
@@ -251,15 +269,21 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
   const previewEnd = selectionStart && hoverDate
     ? (selectionStart <= hoverDate ? hoverDate : selectionStart) : null;
 
-  function handleDateClick(date: string) {
+  async function handleDateClick(date: string) {
     if (!selectionStart) {
       setSelectionStart(date);
     } else {
       const start = selectionStart <= date ? selectionStart : date;
       const end   = selectionStart <= date ? date : selectionStart;
-      setPlannedRanges(prev => [...prev, { id: `${Date.now()}`, start, end }]);
+      const id = `${Date.now()}`;
+      setPlannedRanges(prev => [...prev, { id, start, end }]);
       setSelectionStart(null);
       setHoverDate(null);
+      await supabase.from("planned_ranges").insert({
+        id,
+        start_date: start,
+        end_date: end,
+      });
     }
   }
 
@@ -355,7 +379,11 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
           count={plannedSorted.length}
           action={plannedSorted.length > 0 ? (
             <button
-              onClick={() => setPlannedRanges([])}
+              onClick={async () => {
+                const ids = plannedRanges.map(r => r.id);
+                setPlannedRanges([]);
+                await supabase.from("planned_ranges").delete().in("id", ids);
+              }}
               style={{ fontSize: 11, color: "var(--text-tertiary)", background: "transparent", border: "none", cursor: "pointer", padding: 0, whiteSpace: "nowrap" }}
             >
               Clear all
@@ -399,7 +427,10 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
                       Book
                     </button>
                     <button
-                      onClick={() => setPlannedRanges(prev => prev.filter(x => x.id !== r.id))}
+                      onClick={async () => {
+                        setPlannedRanges(prev => prev.filter(x => x.id !== r.id));
+                        await supabase.from("planned_ranges").delete().eq("id", r.id);
+                      }}
                       style={{ fontSize: 14, color: "var(--text-tertiary)", background: "transparent", border: "none", cursor: "pointer", lineHeight: 1, padding: "0 2px" }}
                       title="Remove"
                     >
@@ -418,10 +449,11 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
         <BookingModal
           range={bookingRange}
           onClose={() => setBookingRange(null)}
-          onBooked={(id) => {
+          onBooked={async (id) => {
             setPlannedRanges(prev => prev.filter(r => r.id !== id));
             setBookingRange(null);
             onRefresh();
+            await supabase.from("planned_ranges").delete().eq("id", id);
           }}
         />
       )}
