@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { TravelPeriod } from "../data/travel";
 import { supabase } from "../../lib/supabase";
 import BookingModal from "./BookingModal";
+import EditPlannedModal from "./EditPlannedModal";
 
 interface PlannedRange {
   id: string;
@@ -244,6 +245,7 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
   const [selectionStart, setSelectionStart] = useState<string | null>(null);
   const [hoverDate, setHoverDate] = useState<string | null>(null);
   const [bookingRange, setBookingRange] = useState<PlannedRange | null>(null);
+  const [editingRange, setEditingRange] = useState<PlannedRange | null>(null);
 
   // Load planned ranges from Supabase on mount
   const loadPlannedRanges = useCallback(async () => {
@@ -433,7 +435,11 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
               const borderColor = label === "LA Visit" ? "rgba(74,159,212,0.2)" : "rgba(253,90,30,0.2)";
               return (
                 <div key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, padding: "10px 14px", gap: 12 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <div
+                    onClick={() => setEditingRange(r)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, cursor: "pointer", flex: 1 }}
+                    title="Click to edit dates"
+                  >
                     <div style={{ width: 8, height: 8, borderRadius: 2, background: "#f59e0b", flexShrink: 0 }} />
                     <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap" }}>
                       {formatDisplay(r.start)}{r.start !== r.end ? <> &rarr; {formatDisplay(r.end)}</> : null}
@@ -483,6 +489,22 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
             setBookingRange(null);
             onRefresh();
             await supabase.from("planned_ranges").delete().eq("id", id);
+          }}
+        />
+      )}
+
+      {/* Edit planned modal */}
+      {editingRange && (
+        <EditPlannedModal
+          range={editingRange}
+          onClose={() => setEditingRange(null)}
+          onSave={async (updated) => {
+            setPlannedRanges(prev => prev.map(r => r.id === updated.id ? updated : r));
+            setEditingRange(null);
+            await supabase.from("planned_ranges").update({
+              start_date: updated.start,
+              end_date: updated.end,
+            }).eq("id", updated.id);
           }}
         />
       )}
