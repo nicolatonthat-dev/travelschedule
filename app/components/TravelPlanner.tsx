@@ -30,6 +30,11 @@ function formatDisplay(dateStr: string) {
 function nightsBetween(start: string, end: string) {
   return Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000);
 }
+function addDays(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 
 // After July (month >= 7), Nic is based in SF — planned trips are LA visits
 function tripLabel(startDateStr: string) {
@@ -273,14 +278,38 @@ export default function TravelPlanner({ confirmedPeriods, onRefresh }: TravelPla
     if (!selectionStart) {
       setSelectionStart(date);
     } else {
-      const start = selectionStart <= date ? selectionStart : date;
-      const end   = selectionStart <= date ? date : selectionStart;
-      const id = `${Date.now()}`;
-      setPlannedRanges(prev => [...prev, { id, start, end }]);
+      let start = selectionStart <= date ? selectionStart : date;
+      let end   = selectionStart <= date ? date : selectionStart;
       setSelectionStart(null);
       setHoverDate(null);
+
+      // Find existing ranges that overlap or are adjacent (touching) to the new range.
+      // Adjacent = the day after one range is the first day of another.
+      const overlapping = plannedRanges.filter(r =>
+        r.start <= addDays(end, 1) && r.end >= addDays(start, -1)
+      );
+
+      // Merge: take earliest start and latest end across all overlapping + new range
+      for (const r of overlapping) {
+        if (r.start < start) start = r.start;
+        if (r.end > end) end = r.end;
+      }
+
+      const newId = `${Date.now()}`;
+      const overlappingIds = overlapping.map(r => r.id);
+
+      // Update local state: remove overlapping, add merged
+      setPlannedRanges(prev => [
+        ...prev.filter(r => !overlappingIds.includes(r.id)),
+        { id: newId, start, end },
+      ]);
+
+      // Sync to Supabase: delete old overlapping rows, insert merged row
+      if (overlappingIds.length > 0) {
+        await supabase.from("planned_ranges").delete().in("id", overlappingIds);
+      }
       await supabase.from("planned_ranges").insert({
-        id,
+        id: newId,
         start_date: start,
         end_date: end,
       });
