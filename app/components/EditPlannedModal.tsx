@@ -6,6 +6,7 @@ interface PlannedRange {
   id: string;
   start: string;
   end: string;
+  who: "nicolas" | "taylor";
 }
 
 interface EditPlannedModalProps {
@@ -28,7 +29,7 @@ export default function EditPlannedModal({ range, onClose, onSave }: EditPlanned
       setError("Start date must be on or before end date.");
       return;
     }
-    onSave({ id: range.id, start, end });
+    onSave({ id: range.id, start, end, who: range.who });
   }
 
   return (
