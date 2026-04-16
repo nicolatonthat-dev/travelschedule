@@ -102,7 +102,20 @@ function PlannerMonth({
     const d = toDateStr(year, month, day);
     return taylorRanges.some(r => d >= r.start && d <= r.end);
   });
+  const hasTogether = cells.some(day => {
+    if (!day) return false;
+    const d = toDateStr(year, month, day);
+    return nicRanges.some(r => d >= r.start && d <= r.end)
+        && taylorRanges.some(r => d >= r.start && d <= r.end);
+  });
   const hasPlanned = hasNicPlanned || hasTaylorPlanned;
+
+  // Per-date visual state — used for border-radius continuity
+  function plannedState(d: string): "nic" | "taylor" | "both" | "none" {
+    const n = nicRanges.some(r => d >= r.start && d <= r.end);
+    const t = taylorRanges.some(r => d >= r.start && d <= r.end);
+    return n && t ? "both" : n ? "nic" : t ? "taylor" : "none";
+  }
 
   return (
     <div style={{ background: "transparent", border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
@@ -145,12 +158,12 @@ function PlannerMonth({
             const confRowStart = col === 0 || !prevConf;
             const confRowEnd   = col === 6 || !nextConf;
 
-            // Planned range border-radius (based on same-user continuity)
-            const activeRanges = isNicPlanned ? nicRanges : isTaylorPlanned ? taylorRanges : [];
-            const prevPlan = prevStr ? activeRanges.some(r => prevStr >= r.start && prevStr <= r.end) : false;
-            const nextPlan = nextStr ? activeRanges.some(r => nextStr >= r.start && nextStr <= r.end) : false;
-            const planRowStart = col === 0 || !prevPlan;
-            const planRowEnd   = col === 6 || !nextPlan;
+            // Planned range border-radius — break on state change (nic/taylor/both)
+            const myState = plannedState(dateStr);
+            const prevState = prevStr ? plannedState(prevStr) : "none";
+            const nextState = nextStr ? plannedState(nextStr) : "none";
+            const planRowStart = col === 0 || prevState !== myState;
+            const planRowEnd   = col === 6 || nextState !== myState;
 
             // Preview border-radius
             const prevPrev = prevStr && previewStart && previewEnd ? (prevStr >= previewStart && prevStr <= previewEnd && !confirmedPeriods.some(p => p.city === "SF" && prevStr >= p.start && prevStr <= p.end) && !plannedRanges.some(r => prevStr >= r.start && prevStr <= r.end)) : false;
@@ -170,10 +183,10 @@ function PlannerMonth({
               fontWeight = 600;
               borderRadius = confRowStart && confRowEnd ? "6px" : confRowStart ? "6px 0 0 6px" : confRowEnd ? "0 6px 6px 0" : "0";
             } else if (isPlanned) {
-              // If both Nic and Taylor have planned this date, use a diagonal gradient to show overlap
+              // If both Nic and Taylor are planned this date, show as green "together"
               if (isNicPlanned && isTaylorPlanned) {
-                bg = "linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.18) 50%, rgba(236,72,153,0.18) 50%, rgba(236,72,153,0.18) 100%)";
-                color = "#f59e0b";
+                bg = "rgba(34,197,94,0.15)";
+                color = "#22c55e";
               } else if (isNicPlanned) {
                 bg = WHO_COLORS.nicolas.fill;
                 color = WHO_COLORS.nicolas.accent;
@@ -204,14 +217,17 @@ function PlannerMonth({
                   color,
                   background: bg,
                   borderRadius: isToday && !isConfirmed && !isPlanned && !isPreview ? "4px" : borderRadius,
-                  outline: isToday ? `1.5px solid ${isConfirmed ? "#fd5a1e" : isPlanned ? (isNicPlanned ? "#f59e0b" : "#ec4899") : "rgba(255,255,255,0.3)"}` : "none",
+                  outline: isToday ? `1.5px solid ${isConfirmed ? "#fd5a1e" : isPlanned ? (isNicPlanned && isTaylorPlanned ? "#22c55e" : isNicPlanned ? "#f59e0b" : "#ec4899") : "rgba(255,255,255,0.3)"}` : "none",
                   outlineOffset: -1,
                   cursor: isPast || isConfirmed ? "default" : "pointer",
                   transition: "background 0.1s",
                 }}
-                title={isConfirmed ? "Already booked" : isPlanned ? "Planned" : undefined}
+                title={isConfirmed ? "Already booked" : isNicPlanned && isTaylorPlanned ? "Nic & Taylor together" : isPlanned ? "Planned" : undefined}
               >
                 {day}
+                {isNicPlanned && isTaylorPlanned && !isConfirmed && (
+                  <span style={{ position: "absolute", top: 1, right: 3, fontSize: 7, lineHeight: 1, color: "#4a9fd4" }}>♥</span>
+                )}
                 {isSelStart && !isConfirmed && !isPlanned && (
                   <span style={{ position: "absolute", bottom: 3, left: "50%", transform: "translateX(-50%)", width: 3, height: 3, borderRadius: "50%", background: activeColors.accent }} />
                 )}
@@ -238,6 +254,12 @@ function PlannerMonth({
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 10, height: 10, borderRadius: 3, background: "rgba(236,72,153,0.18)", border: "1px solid rgba(236,72,153,0.4)" }} />
               <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Taylor</span>
+            </div>
+          )}
+          {hasTogether && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ fontSize: 11, color: "#4a9fd4" }}>♥</span>
+              <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Together</span>
             </div>
           )}
           {!hasConfirmed && !hasPlanned && (

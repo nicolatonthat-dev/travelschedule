@@ -110,19 +110,30 @@ export default function MonthCalendar({ year, month, travelPeriods, taylorPeriod
             const together = nicolasInSF && taylorInSF;
             const isToday = dateStr === today;
 
-            // Check neighbours for row-aware rounded corners
+            // Per-date state: "together" (both in SF), "sf" (nic only), or "none"
+            const cellState = (d: string): "together" | "sf" | "none" => {
+              const n = isInPeriods(d, travelPeriods);
+              const t = isInPeriods(d, taylorPeriods);
+              return n && t ? "together" : n ? "sf" : "none";
+            };
+            const myState = cellState(dateStr);
+
+            // Check neighbours for row-aware rounded corners — break on state change
             const col = idx % 7; // 0=Sun, 6=Sat
             const prevDay = day > 1 ? toDateString(year, month, day - 1) : null;
             const nextDay = day < daysInMonth ? toDateString(year, month, day + 1) : null;
-            const prevInSF = prevDay ? isInPeriods(prevDay, travelPeriods) : false;
-            const nextInSF = nextDay ? isInPeriods(nextDay, travelPeriods) : false;
-            const isRowStart = col === 0 || !prevInSF;
-            const isRowEnd = col === 6 || !nextInSF;
+            const prevState = prevDay ? cellState(prevDay) : "none";
+            const nextState = nextDay ? cellState(nextDay) : "none";
+            const isRowStart = col === 0 || prevState !== myState;
+            const isRowEnd = col === 6 || nextState !== myState;
 
             let bg = "transparent";
             let color = isToday ? "var(--text-primary)" : "var(--text-secondary)";
 
-            if (nicolasInSF) {
+            if (together) {
+              bg = "rgba(34,197,94,0.15)";
+              color = "#22c55e";
+            } else if (nicolasInSF) {
               bg = "rgba(253,90,30,0.03)";
               color = "#fd5a1e";
             }
@@ -152,7 +163,7 @@ export default function MonthCalendar({ year, month, travelPeriods, taylorPeriod
                   background: bg,
                   borderRadius: isToday && !nicolasInSF ? "4px" : borderRadius,
                   outline: isToday
-                    ? `1.5px solid ${nicolasInSF ? "#fd5a1e" : "rgba(255,255,255,0.35)"}`
+                    ? `1.5px solid ${together ? "#22c55e" : nicolasInSF ? "#fd5a1e" : "rgba(255,255,255,0.35)"}`
                     : "none",
                   outlineOffset: -1,
                   cursor: "default",
