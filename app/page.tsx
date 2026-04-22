@@ -95,7 +95,27 @@ export default function Home() {
   }
 
   async function handleDeleteFlight(id: string) {
+    const deleted = flights.find(f => f.id === id);
     await supabase.from("flights").delete().eq("id", id);
+
+    // If no flights remain in the deleted flight's date range, also drop the matching travel_period
+    if (deleted) {
+      const period = travelPeriods.find(p => deleted.date >= p.start && deleted.date <= p.end);
+      if (period) {
+        const stillCovered = flights.some(
+          f => f.id !== id && f.date >= period.start && f.date <= period.end
+        );
+        if (!stillCovered) {
+          await supabase
+            .from("travel_periods")
+            .delete()
+            .eq("start", period.start)
+            .eq("end", period.end)
+            .eq("who", "nicolas");
+        }
+      }
+    }
+
     await loadData();
   }
 
